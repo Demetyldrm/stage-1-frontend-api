@@ -11,7 +11,6 @@ function SignUpModal({
   isModalLoading,
   serverErrors,
 }) {
-  // Memorize default values to prevent unnecessary re-renders
   const defaultValues = useMemo(() => ({ email: "", password: "" }), []);
 
   const { values, handleChange, errors, isValid, resetForm } =
@@ -25,7 +24,7 @@ function SignUpModal({
 
   const handleSubmit = (event) => {
     event.preventDefault();
-    onSubmit(values); // Pass form values to the submit handler
+    onSubmit(values);
   };
 
   return (

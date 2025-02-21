@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { Routes, Route } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
+
 import "./App.css";
 import Header from "../Header/Header";
 import SavedNews from "../SavedNewsPage/SavedNews.js";
@@ -7,15 +10,20 @@ import Main from "../Main/Main";
 import Footer from "../Footer/Footer";
 import SignInModal from "../SignInModal/SignInModal";
 import SignUpModal from "../SignUpModal/SignUpModal";
+import ModalWithForm from "../ModalWithForm/ModalWithForm";
 import ProtectedRoute from "../ProtectedRoute/ProtectedRoute";
 import { useDispatch } from "react-redux";
-import { login, register } from "../../store/securitySlice.js";
+import { reloadSavedArticles } from "../../store/newsSlice";
+
 import {
   getNewsByDateAndKeyword,
   getSavedArticles,
 } from "../../store/newsSlice.js";
+import { signUp, authorize } from "../../utils/auth.js";
+
 function App() {
   const dispatch = useDispatch();
+  const location = useLocation();
 
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
@@ -24,43 +32,64 @@ function App() {
   const [isSearching, setIsSearching] = useState(false);
   const [serverErrors, setServerErrors] = useState("");
   const [isModalLoading, setIsModalLoading] = useState(false);
-
-  const handleSignUpModal = () => setActiveModal("signUp");
-
-  const handleOpenModal = (modalType) => {
-    setActiveModal(modalType); // Set the active modal type
-  };
+  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+  const navigate = useNavigate();
 
   const handleCloseModal = () => {
-    setActiveModal(null); // Close all modals
+    setActiveModal(null);
+    setIsSuccessModalOpen(false);
   };
 
   const handleSignInModal = () => {
-    console.log("handleSignInModal triggered");
+    console.log("Sign-in button clicked - Opening modal");
     setActiveModal("signIn");
   };
 
-  //Creating these function now for the second stage of the project
-  const handleSignUp = (values) => {
-    dispatch(register(values))
-      .unwrap()
-      .then(() => {
-        handleCloseModal();
-        setActiveModal("signUp");
-      })
-      .catch(() => setServerErrors("This email is already in use"));
+  const handleSignUp = async (values) => {
+    try {
+      const response = await signUp(
+        values.email,
+        values.password,
+        values.username
+      );
+      setCurrentUser(response.data);
+      setIsLoggedIn(true);
+      setActiveModal(null);
+
+      setTimeout(() => {
+        setIsSuccessModalOpen(true);
+      }, 300);
+    } catch (error) {
+      setServerErrors(error.message);
+    }
   };
 
-  //Creating these function now for the second stage of the project
-  const handleSignIn = (values) => {
-    dispatch(login(values))
-      .unwrap()
-      .then((user) => {
-        setIsLoggedIn(true);
-        setCurrentUser(user);
-        handleCloseModal();
-      })
-      .catch(() => setServerErrors("Invalid email or password"));
+  const handleSignIn = async (values) => {
+    try {
+      const response = await authorize(values.email, values.password);
+      setIsLoggedIn(true);
+      setCurrentUser({ name: values.name, email: values.email });
+      setActiveModal(null);
+    } catch (error) {
+      setServerErrors("Invalid email or password");
+    }
+  };
+
+  const handleSignInFromSuccess = () => {
+    setIsSuccessModalOpen(false);
+    setActiveModal("signIn");
+  };
+
+  const handleLogout = () => {
+    console.log("Logging out user...");
+
+    setIsLoggedIn(false);
+    setCurrentUser(null);
+
+    dispatch({ type: "news/clearSavedArticles" });
+    localStorage.removeItem("savedNews");
+
+    navigate("/");
   };
 
   const handleNewsArticleSearch = (keyword) => {
@@ -72,60 +101,46 @@ function App() {
       .finally(() => setIsPageLoading(false));
   };
 
-  //Creating these function now for the second stage of the project
   useEffect(() => {
-    if (isLoggedIn) {
-      dispatch(getSavedArticles())
-        .unwrap()
-        .catch(() => setServerErrors("Error fetching saved articles"));
-    }
-  }, [isLoggedIn, dispatch]);
+    dispatch(reloadSavedArticles());
+  }, [dispatch]);
 
   useEffect(() => {
     function handleCloseMethods(evt) {
-      // Close the modal when "Escape" key is pressed
       if (evt.key === "Escape") {
-        handleCloseModal();
-      }
-
-      // Close the modal when clicking on the outside content
-      if (evt.type === "click" && evt.target.classList.contains("modal")) {
-        handleCloseModal();
-      }
-
-      // Close the modal when clicking the close button
-      if (
-        evt.type === "click" &&
-        evt.target.classList.contains("modal__close-button")
-      ) {
         handleCloseModal();
       }
     }
 
-    if (activeModal !== "") {
+    function handleOutsideClick(evt) {
+      if (evt.target.classList.contains("modal")) {
+        handleCloseModal();
+      }
+    }
+
+    if (activeModal || isSuccessModalOpen) {
       document.addEventListener("keydown", handleCloseMethods);
+      document.addEventListener("click", handleOutsideClick);
     }
 
     return () => {
       document.removeEventListener("keydown", handleCloseMethods);
+      document.removeEventListener("click", handleOutsideClick);
     };
-  }, [activeModal]);
-
-  const handleOverlayClick = (evt) => {
-    if (evt.target.classList.contains("modal")) {
-      handleCloseModal();
-    }
-  };
+  }, [activeModal, isSuccessModalOpen]);
 
   return (
     <div className="page">
-      <Header
-        isLoggedIn={isLoggedIn}
-        currentUser={currentUser}
-        onSignInModal={handleSignInModal}
-        onSingUpModal={handleSignUpModal}
-        onSubmit={handleNewsArticleSearch}
-      />
+      {location.pathname !== "/saved-news" && (
+        <Header
+          isLoggedIn={isLoggedIn}
+          currentUser={currentUser}
+          onSignInModal={() => setActiveModal("signIn")}
+          onSignUpModal={() => setActiveModal("signUp")}
+          onLogout={handleLogout}
+          onSubmit={handleNewsArticleSearch}
+        />
+      )}
 
       <Routes>
         <Route
@@ -152,41 +167,34 @@ function App() {
       <Footer />
 
       {activeModal === "signIn" && (
-        <div
-          className={`modal modal__type-signIn ${
-            activeModal === "signIn" ? "modal__open" : ""
-          }`}
-          onClick={handleOverlayClick}
-        >
-          <SignInModal
-            modalName="signIn"
-            isOpen={activeModal === "signIn"}
-            onSignInModal={handleSignInModal}
-            handleCloseModal={handleCloseModal}
-            onSignUpModal={handleSignUpModal}
-            onSubmit={handleSignIn}
-          />
-        </div>
+        <SignInModal
+          isOpen={activeModal === "signIn"}
+          handleCloseModal={handleCloseModal}
+          onSignUpModal={() => setActiveModal("signUp")}
+          onSubmit={handleSignIn}
+          serverErrors={serverErrors}
+        />
       )}
 
       {activeModal === "signUp" && (
-        <div
-          className={`modal modal__type-signUp ${
-            activeModal === "signUp" ? "modal__open" : ""
-          }`}
-          onClick={handleOverlayClick}
-        >
-          <SignUpModal
-            modalName="signUp"
-            isOpen={activeModal === "signUp"}
-            handleCloseModal={handleCloseModal}
-            onSignUpModal={handleSignUpModal}
-            onSignInModal={handleSignInModal}
-            onSubmit={handleSignUp}
-            isModalLoading={isModalLoading}
-            serverErrors={serverErrors}
-          />
-        </div>
+        <SignUpModal
+          isOpen={activeModal === "signUp"}
+          handleCloseModal={handleCloseModal}
+          onSignInModal={() => setActiveModal("signIn")}
+          onSubmit={handleSignUp}
+          serverErrors={serverErrors}
+        />
+      )}
+      {/* Success Modal */}
+      {isSuccessModalOpen && (
+        <ModalWithForm
+          modalName="success"
+          isOpen={isSuccessModalOpen}
+          onClose={handleCloseModal}
+          message="Registration successfully completed!"
+          customClass="modal__success"
+          onSignIn={handleSignInFromSuccess}
+        />
       )}
     </div>
   );
