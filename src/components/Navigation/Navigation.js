@@ -1,44 +1,65 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-
 import "./Navigation.css";
 
-function Navigation({ isLoggedIn, onSignInModal, onLogout }) {
+function Navigation({ isLoggedIn, currentUser, onSignInModal, onLogout }) {
   const reactLocation = useLocation();
   const currentLocation = reactLocation.pathname;
-  const currentUser = { userId: "1", name: "Demet" };
+
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    console.log("Current User in Navigation:", currentUser);
+  }, [currentLocation, currentUser]);
 
   return (
     <nav className="nav">
-      <div className="nav__left-container">
+      <div className="nav__left-container nav__logo-container">
         <Link to="/" className="nav__logo-link">
           <h2
-            className="nav__logo"
-            onClick={() => console.log("Logo clicked!")}
-            style={{ cursor: "pointer" }}
+            className={`nav__logo ${
+              currentLocation === "/"
+                ? "nav__logo-home"
+                : "nav__logo-saved-news"
+            }`}
           >
             NewsExplorer
           </h2>
         </Link>
       </div>
-      <div className="nav__right-container">
+
+      <button
+        className={`nav__menu-icon ${menuOpen ? "open" : ""} ${
+          currentLocation === "/saved-news" ? "saved-news" : ""
+        }`}
+        onClick={(e) => {
+          e.stopPropagation();
+          setMenuOpen((prev) => !prev);
+        }}
+      >
+        <span></span>
+        <span></span>
+      </button>
+
+      <div className={`nav__right-container ${menuOpen ? "nav__open" : ""}`}>
         <ul className="nav__container-links">
-          <li>
-            <Link to="/">
+          <li className="nav__item">
+            <Link to="/" onClick={() => setMenuOpen(false)}>
               <button
-                className={
+                className={`nav__button nav__button-action ${
                   currentLocation === "/"
-                    ? "nav__btn nav__btn-active"
-                    : "nav__btn-saved-news"
-                }
+                    ? "nav__btn-active-home"
+                    : "nav__btn-active-home-saved"
+                }`}
               >
                 Home
               </button>
             </Link>
           </li>
+
           {isLoggedIn && (
             <li>
-              <Link to="/saved-news">
+              <Link to="/saved-news" onClick={() => setMenuOpen(false)}>
                 <button
                   className={
                     currentLocation === "/saved-news"
@@ -51,26 +72,35 @@ function Navigation({ isLoggedIn, onSignInModal, onLogout }) {
               </Link>
             </li>
           )}
-          {isLoggedIn ? (
+
+          {!isLoggedIn && (
             <li>
               <button
-                className={
-                  currentLocation === "/"
-                    ? "nav__btn-logout"
-                    : "nav__btn-logout-saved-news"
-                }
-                onClick={onLogout}
-              >
-                {currentUser ? currentUser.name : ""}
-              </button>
-            </li>
-          ) : (
-            <li>
-              <button
-                className=" modal__open nav__btn-signIn"
-                onClick={onSignInModal}
+                className="nav__menu-signin-btn"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSignInModal();
+                }}
               >
                 Sign in
+              </button>
+            </li>
+          )}
+
+          {isLoggedIn && (
+            <li>
+              <button
+                className={`nav__btn-logout ${
+                  currentLocation === "/saved-news"
+                    ? "nav__btn-logout-saved-news"
+                    : ""
+                }`}
+                onClick={() => {
+                  onLogout();
+                  setMenuOpen(false);
+                }}
+              >
+                {currentUser?.name || "User"}
               </button>
             </li>
           )}

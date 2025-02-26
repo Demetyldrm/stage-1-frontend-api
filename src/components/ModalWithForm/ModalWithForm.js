@@ -2,11 +2,19 @@ import React from "react";
 
 import "./ModalWithForm.css";
 
-function ModalWithForm({ children, modalName, onClose, onSubmit, isOpen }) {
+function ModalWithForm({
+  children,
+  modalName,
+  onClose,
+  onSubmit,
+  isOpen,
+  message,
+  onSignIn,
+}) {
   return (
     <div
       className={`modal modal__type-${modalName} ${
-        isOpen ? "modal__open" : ""
+        isOpen ? "modal__open " : ""
       }`}
       role="dialog"
       aria-hidden={!isOpen}
@@ -14,7 +22,9 @@ function ModalWithForm({ children, modalName, onClose, onSubmit, isOpen }) {
     >
       <div
         className={`modal__content ${
-          modalName === "signUp" ? "modal__content-singUp" : ""
+          modalName === "signUp"
+            ? "modal__content-singUp modal__content-success"
+            : ""
         }`}
       >
         <button
@@ -23,14 +33,18 @@ function ModalWithForm({ children, modalName, onClose, onSubmit, isOpen }) {
           onClick={onClose}
           aria-label="Close"
         />
-        <form
-          className={`modal__form ${
-            modalName === "signUp" ? "modal__form-signUp" : "modal__form-signIn"
-          }`}
-          onSubmit={onSubmit}
-        >
-          {children}
-        </form>
+        {message ? (
+          <div className="modal__message">
+            <h2 className="modal__register-message">{message}</h2>
+            <button className="modal__action-button" onClick={onSignIn}>
+              Sign in
+            </button>
+          </div>
+        ) : (
+          <form className="modal__form modal__form-signUp" onSubmit={onSubmit}>
+            {children}
+          </form>
+        )}
       </div>
     </div>
   );

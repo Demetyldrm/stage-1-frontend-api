@@ -1,10 +1,10 @@
 .newscardlist {
   display: flex;
   flex-direction: column;
-  align-items: flex;
+  align-items: center;
   justify-content: center;
   margin: 0 auto;
-  background-color: rgba(245, 246, 247, 1);
+  max-width: 1440px;
 }
 
 .newscardlist__result {
@@ -13,22 +13,10 @@
   font-weight: 400;
   line-height: 46px;
   text-align: left;
-  padding-top: 80px;
-  padding-bottom: 64px;
-  margin-left: 104px;
-}
-
-.newscardlist__container {
-  display: flex;
-  flex-direction: row;
-  justify-content: center;
-  flex-wrap: wrap;
-  max-width: 1440px;
-  margin: 0 auto;
-  padding-left: 16px;
-  padding-right: 16px;
-  gap: 16px;
-  padding-bottom: 64px;
+  margin-top: 80px;
+  margin-bottom: 40px;
+  margin-left: 36px;
+  margin-right: auto;
 }
 
 .newscardlist__button-show-more {
@@ -45,7 +33,7 @@
   padding: 0;
   color: #1a1b22;
   text-align: center;
-  margin: 0 auto 80px auto;
+  margin: 56px auto 80px auto;
   transition: 0s linear 0.2s, opacity 0.2s linear;
 }
 
@@ -56,6 +44,9 @@
 }
 
 @media screen and (max-width: 768px) {
+  .newscardlist {
+    margin: 0;
+  }
   .newscardlist__title {
     font-size: 18px;
     padding-top: 40px;
@@ -63,9 +54,12 @@
   }
 
   .newscardlist__container {
-    max-width: 800px;
-    gap: 8px;
-    padding-bottom: 32px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    column-gap: 16px;
+    row-gap: 2px;
+    margin: 0 !important;
+    padding: 0;
   }
 
   .newscardlist__button {
@@ -87,7 +81,20 @@
   }
 
   .newscardlist__container {
-    padding-bottom: 16px;
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(1, 1fr);
+    max-width: 288px;
+    padding: 0;
+    row-gap: 10px !important;
+    justify-content: center;
+  }
+
+  .newscardlist__result {
+    font-size: 30px;
+    font-weight: 400;
+    line-height: 34px;
+    margin-left: 16px;
   }
 }
 
@@ -95,10 +102,7 @@
   .newscardlist__title {
     padding-bottom: 40px;
   }
-  .newscardlist__container {
-    padding-left: 10px;
-    padding-right: 10px;
-  }
+
   .newscardlist__button {
     font-size: 16px;
     margin-bottom: 20px;
@@ -117,5 +121,14 @@
     margin-bottom: 18px;
     width: 190px;
     max-width: 190px;
+  }
+}
+@media screen and (min-width: 1024px) {
+  .newscardlist__container {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    column-gap: 16px;
+    justify-content: center;
+    padding: 0rem 1rem;
   }
 }
